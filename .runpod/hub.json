@@ -41,8 +41,12 @@
         "value": "qwen-image-2.1-Q4_K_M.gguf"
       },
       {
+        "key": "LLM_REPO",
+        "value": "Qwen/Qwen3-VL-8B-Instruct-GGUF"
+      },
+      {
         "key": "LLM_FILE",
-        "value": "text_encoders/qwen3vl_8b_int8_convrot.safetensors"
+        "value": "Qwen3VL-8B-Instruct-Q4_K_M.gguf"
       },
       {
         "key": "VAE_FILE",

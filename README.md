@@ -9,7 +9,7 @@ The container runs `stable-diffusion.cpp` on CUDA. It does not bake the weights 
 | Role | File | Size |
 | --- | --- | --- |
 | Diffusion | `qwen-image-2.1-Q4_K_M.gguf` | 4.6 GiB |
-| Text encoder | `text_encoders/qwen3vl_8b_int8_convrot.safetensors` | 8.7 GiB |
+| Text encoder | `Qwen/Qwen3-VL-8B-Instruct-GGUF` `Qwen3VL-8B-Instruct-Q4_K_M.gguf` | 5.0 GB |
 | VAE | `vae/qwen_image_2.1_vae_bf16.safetensors` | 644 MiB |
 
 The Hugging Face repo also contains the other quants and a 16 GiB BF16 text encoder. This worker does not download those.

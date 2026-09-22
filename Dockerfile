@@ -16,7 +16,8 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     HF_HUB_ENABLE_HF_TRANSFER=1 \
     MODEL_REPO=KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF \
     DIFFUSION_FILE=qwen-image-2.1-Q4_K_M.gguf \
-    LLM_FILE=text_encoders/qwen3vl_8b_int8_convrot.safetensors \
+    LLM_REPO=Qwen/Qwen3-VL-8B-Instruct-GGUF \
+    LLM_FILE=Qwen3VL-8B-Instruct-Q4_K_M.gguf \
     VAE_FILE=vae/qwen_image_2.1_vae_bf16.safetensors \
     SD_SERVER_BIN=/sd-server \
     SD_PORT=1234 \
@@ -32,5 +33,5 @@ RUN pip install --no-cache-dir -r /requirements.txt
 WORKDIR /app
 COPY handler.py /app/handler.py
 
-ENTRYPOINT []
+ENTRYPOINT ["/opt/nvidia/nvidia_entrypoint.sh"]
 CMD ["python", "-u", "/app/handler.py"]

@@ -17,10 +17,10 @@ REPO = os.environ.get(
     "KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF",
 )
 DIFFUSION_FILE = os.environ.get("DIFFUSION_FILE", "qwen-image-2.1-Q4_K_M.gguf")
-LLM_FILE = os.environ.get(
-    "LLM_FILE", "text_encoders/qwen3vl_8b_int8_convrot.safetensors"
-)
+LLM_REPO = os.environ.get("LLM_REPO", "Qwen/Qwen3-VL-8B-Instruct-GGUF")
+LLM_FILE = os.environ.get("LLM_FILE", "Qwen3VL-8B-Instruct-Q4_K_M.gguf")
 VAE_FILE = os.environ.get("VAE_FILE", "vae/qwen_image_2.1_vae_bf16.safetensors")
+SERVER_LOG = Path("/tmp/sd-server.log")
 SD_PORT = int(os.environ.get("SD_PORT", "1234"))
 SD_URL = f"http://127.0.0.1:{SD_PORT}"
 
@@ -66,21 +66,29 @@ def cached_snapshot() -> Path | None:
     return None
 
 
-def resolve_file(filename: str) -> str:
-    snapshot = cached_snapshot()
-    if snapshot is not None:
-        candidate = snapshot / filename
-        if candidate.is_file() and candidate.stat().st_size > 0:
-            log(f"using cached {candidate}")
-            return str(candidate)
+def resolve_file(repo: str, filename: str) -> str:
+    if repo == REPO:
+        snapshot = cached_snapshot()
+        if snapshot is not None:
+            candidate = snapshot / filename
+            if candidate.is_file() and candidate.stat().st_size > 0:
+                log(f"using cached {candidate}")
+                return str(candidate)
     destination = model_store()
-    log(f"downloading {REPO}/{filename}")
+    log(f"downloading {repo}/{filename}")
     return hf_hub_download(
-        repo_id=REPO,
+        repo_id=repo,
         filename=filename,
-        local_dir=str(destination),
+        local_dir=str(destination / repo.replace("/", "--")),
         cache_dir=str(destination / ".cache"),
     )
+
+
+def server_log_tail(limit: int = 80) -> str:
+    if not SERVER_LOG.is_file():
+        return ""
+    lines = SERVER_LOG.read_text(encoding="utf-8", errors="replace").splitlines()
+    return "\n".join(lines[-limit:])
 
 
 def wait_for_server(process, timeout_s: int = 900) -> None:
@@ -88,26 +96,31 @@ def wait_for_server(process, timeout_s: int = 900) -> None:
     url = f"{SD_URL}/v1/models"
     while time.time() < deadline:
         if process.poll() is not None:
-            raise RuntimeError(f"sd-server exited with code {process.returncode}")
+            code = process.returncode
+            signal = f" (signal {-code})" if code < 0 else ""
+            raise RuntimeError(
+                f"sd-server exited with code {code}{signal}\n{server_log_tail()}"
+            )
         try:
             with urllib.request.urlopen(url, timeout=3) as response:
                 if response.status == 200:
                     return
         except Exception:
             time.sleep(2)
-    raise TimeoutError("sd-server did not become ready")
+    raise TimeoutError(f"sd-server did not become ready\n{server_log_tail()}")
 
 
 def start_engine() -> None:
     global _server
-    diffusion = resolve_file(DIFFUSION_FILE)
-    llm = resolve_file(LLM_FILE)
-    vae = resolve_file(VAE_FILE)
+    diffusion = resolve_file(REPO, DIFFUSION_FILE)
+    llm = resolve_file(LLM_REPO, LLM_FILE)
+    vae = resolve_file(REPO, VAE_FILE)
     binary = os.environ.get("SD_SERVER_BIN", "/sd-server")
     if not Path(binary).is_file():
         raise FileNotFoundError(f"sd-server not found at {binary}")
 
     command = [
+        "stdbuf", "-oL", "-eL",
         binary,
         "--diffusion-model", diffusion,
         "--vae", vae,
@@ -126,7 +139,24 @@ def start_engine() -> None:
         command.append("--offload-to-cpu")
 
     log("starting " + " ".join(command))
-    _server = subprocess.Popen(command)
+    env = os.environ.copy()
+    library_paths = [
+        "/usr/local/nvidia/lib64",
+        "/usr/local/nvidia/lib",
+        "/usr/local/cuda/lib64",
+        "/usr/local/cuda/compat",
+        "/sd.cpp/bin",
+    ]
+    current = env.get("LD_LIBRARY_PATH", "")
+    env["LD_LIBRARY_PATH"] = ":".join(path for path in library_paths + [current] if path)
+    log_handle = SERVER_LOG.open("w", encoding="utf-8")
+    _server = subprocess.Popen(
+        command,
+        stdout=log_handle,
+        stderr=subprocess.STDOUT,
+        env=env,
+        cwd="/sd.cpp/bin",
+    )
     wait_for_server(_server)
     log(f"sd-server ready at {SD_URL}")
 

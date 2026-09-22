@@ -4,6 +4,7 @@ import base64
 import concurrent.futures
 import json
 import os
+import random
 import struct
 import subprocess
 import threading
@@ -238,7 +239,7 @@ def start_engine() -> None:
         "--steps", os.environ.get("SD_STEPS", "25"),
         "-W", os.environ.get("SD_WIDTH", "1024"),
         "-H", os.environ.get("SD_HEIGHT", "1024"),
-        "--seed", "-1",
+        "--seed", "42",
         "--vae-tiling",
         "--listen-ip", "127.0.0.1",
         "--listen-port", str(SD_PORT),
@@ -331,6 +332,8 @@ def generate(job_input: dict, job: dict | None = None) -> dict:
         raise ValueError("steps must be between 1 and 60")
     cfg_scale = float(job_input.get("cfg_scale", os.environ.get("SD_CFG", "6")))
     seed = int(job_input.get("seed", -1))
+    if seed <= 0:
+        seed = random.randint(1, 2147483647)
 
     if job is not None:
         try:
@@ -364,7 +367,11 @@ def generate(job_input: dict, job: dict | None = None) -> dict:
             payload = json.load(response)
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", "replace")
-        raise RuntimeError(f"sd-server returned {exc.code}: {detail}") from exc
+        server_tail = server_log_tail(40)
+        raise RuntimeError(
+            f"sd-server returned {exc.code}: {detail}\n"
+            f"--- sd-server log tail ---\n{server_tail}\n--------------------------"
+        ) from exc
 
     images = payload.get("images") or []
     if not images:

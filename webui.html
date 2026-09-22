@@ -853,7 +853,8 @@
     }
 
     function randomizeSeed() {
-      document.getElementById('seedInput').value = -1;
+      const newSeed = Math.floor(Math.random() * 2147483647) + 1;
+      document.getElementById('seedInput').value = newSeed;
     }
 
     // Reference Image Upload
@@ -923,7 +924,11 @@
       const height = parseInt(document.getElementById('heightInput').value);
       const steps = parseInt(document.getElementById('stepsInput').value);
       const cfg_scale = parseFloat(document.getElementById('cfgInput').value);
-      const seed = parseInt(document.getElementById('seedInput').value);
+      let seed = parseInt(document.getElementById('seedInput').value);
+      if (isNaN(seed) || seed <= 0) {
+        seed = Math.floor(Math.random() * 2147483647) + 1;
+        document.getElementById('seedInput').value = seed;
+      }
       const negative_prompt = document.getElementById('negativePromptInput').value.trim();
 
       const payload = {

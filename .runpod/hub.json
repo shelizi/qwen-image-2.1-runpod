@@ -59,6 +59,10 @@
         "value": "Qwen3VL-8B-Instruct-Q4_K_M.gguf"
       },
       {
+        "key": "LLM_VISION_FILE",
+        "value": "mmproj-Qwen3VL-8B-Instruct-F16.gguf"
+      },
+      {
         "key": "VAE_FILE",
         "value": "vae/qwen_image_2.1_vae_bf16.safetensors"
       },

@@ -1,6 +1,6 @@
 """RunPod Serverless worker for Qwen-Image 2.1 Q4_K_M."""
 
-WORKER_VERSION = "v0.1.9"
+WORKER_VERSION = "v0.1.10"
 
 import base64
 import concurrent.futures
@@ -26,6 +26,9 @@ REPO = os.environ.get(
 DIFFUSION_FILE = os.environ.get("DIFFUSION_FILE", "qwen-image-2.1-Q4_K_M.gguf")
 LLM_REPO = os.environ.get("LLM_REPO", "Qwen/Qwen3-VL-8B-Instruct-GGUF")
 LLM_FILE = os.environ.get("LLM_FILE", "Qwen3VL-8B-Instruct-Q4_K_M.gguf")
+LLM_VISION_FILE = os.environ.get(
+    "LLM_VISION_FILE", "mmproj-Qwen3VL-8B-Instruct-F16.gguf"
+)
 VAE_FILE = os.environ.get("VAE_FILE", "vae/qwen_image_2.1_vae_bf16.safetensors")
 SERVER_LOG = Path("/tmp/sd-server.log")
 SD_PORT = int(os.environ.get("SD_PORT", "1234"))
@@ -217,12 +220,14 @@ def wait_for_server(process, timeout_s: int = 900) -> None:
 def start_engine() -> None:
     global _server
     log("downloading model weights in parallel...")
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
         f_diff = executor.submit(resolve_file, REPO, DIFFUSION_FILE)
         f_llm = executor.submit(resolve_file, LLM_REPO, LLM_FILE)
+        f_vis = executor.submit(resolve_file, LLM_REPO, LLM_VISION_FILE)
         f_vae = executor.submit(resolve_file, REPO, VAE_FILE)
         diffusion = f_diff.result()
         llm = f_llm.result()
+        vision = f_vis.result()
         vae = f_vae.result()
     log("all model weights downloaded and ready")
 
@@ -236,6 +241,7 @@ def start_engine() -> None:
         "--diffusion-model", diffusion,
         "--vae", vae,
         "--llm", llm,
+        "--llm_vision", vision,
         "--cfg-scale", os.environ.get("SD_CFG", "6"),
         "--sampling-method", "euler",
         "--steps", os.environ.get("SD_STEPS", "25"),
@@ -276,6 +282,11 @@ def start_engine() -> None:
     startup_log = server_log_tail(50)
     if startup_log:
         log("--- sd-server startup & device log ---\n" + startup_log + "\n-------------------------------------")
+    if "ggml_cuda_init: failed" in startup_log or "no GPU devices" in startup_log:
+        raise RuntimeError(
+            "sd-server started without a working GPU (host driver/CUDA mismatch); "
+            "failing fast instead of burning CPU inference"
+        )
 
 
 def initialize() -> None:

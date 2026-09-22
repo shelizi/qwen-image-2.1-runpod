@@ -7,7 +7,8 @@ RUN apt-get update && \
         python3 \
         python3-pip \
         python3-venv \
-        ca-certificates && \
+        ca-certificates \
+        aria2 && \
     rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m venv /opt/venv
@@ -32,6 +33,7 @@ RUN pip install --no-cache-dir -r /requirements.txt
 
 WORKDIR /app
 COPY handler.py /app/handler.py
+COPY test_image.b64 /app/test_image.b64
 
 ENTRYPOINT ["/opt/nvidia/nvidia_entrypoint.sh"]
 CMD ["python", "-u", "/app/handler.py"]

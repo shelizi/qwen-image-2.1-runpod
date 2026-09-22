@@ -1,0 +1,52 @@
+# Qwen-Image 2.1 RunPod Serverless
+
+RunPod Serverless worker for [KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF](https://huggingface.co/KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF), using the **Q4_K_M** diffusion file.
+
+The container runs `stable-diffusion.cpp` on CUDA. It does not bake the weights into the image. On startup it loads only these three files:
+
+| Role | File | Size |
+| --- | --- | --- |
+| Diffusion | `qwen-image-2.1-Q4_K_M.gguf` | 4.6 GiB |
+| Text encoder | `text_encoders/qwen3vl_8b_int8_convrot.safetensors` | 8.7 GiB |
+| VAE | `vae/qwen_image_2.1_vae_bf16.safetensors` | 644 MiB |
+
+The Hugging Face repo also contains the other quants and a 16 GiB BF16 text encoder. This worker does not download those.
+
+## Deploy on RunPod
+
+1. In [RunPod Settings](https://console.runpod.io/user/settings), connect GitHub and allow this repository.
+2. Open Serverless and create an endpoint with **Import Git Repository**.
+3. Select `qwen-image-2.1-runpod`, branch `main`, Dockerfile at the repository root. Endpoint type: **Queue**.
+4. Pick a GPU with at least 24 GB VRAM (for example RTX 4090, L4, A5000, or A40). Weights are about 14 GB, and sampling needs more.
+5. Attach a Network Volume mounted at `/runpod-volume` if you want the download to survive worker restarts. Without it, a new machine downloads the three files again.
+6. Set the execution timeout to at least 1800 seconds. The first job waits while the files download.
+7. Deploy. RunPod builds the image from GitHub. A new GitHub release updates an existing endpoint.
+
+`SD_OFFLOAD=1` is the default, so the text encoder stays in RAM and the GPU is used for sampling. Set `SD_OFFLOAD=0` only on a card with enough VRAM to hold all three weights plus activations.
+
+## Request
+
+```bash
+curl -X POST "https://api.runpod.ai/v2/ENDPOINT_ID/runsync" \
+  -H "Authorization: Bearer $RUNPOD_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": {
+      "prompt": "a ceramic teapot on a wooden table, soft daylight",
+      "negative_prompt": "",
+      "width": 1024,
+      "height": 1024,
+      "steps": 25,
+      "cfg_scale": 6,
+      "seed": -1
+    }
+  }'
+```
+
+`seed` below 0 is random. Width and height must be multiples of 32, from 256 through 2048. Steps must be from 1 through 60. The default sampler is Euler.
+
+The result field `image` is a PNG encoded as base64. Pass `image` as base64 to use that picture as a reference edit. Long jobs should use `/run` and then poll `/status`, because `/runsync` can time out before a cold worker finishes.
+
+## License
+
+This worker code is MIT. The Qwen-Image 2.1 weights use the Qwen Research License and are for non-commercial use.

@@ -1,0 +1,9 @@
+.git
+.github
+README.md
+test_input.json
+models
+*.gguf
+*.safetensors
+__pycache__
+.venv

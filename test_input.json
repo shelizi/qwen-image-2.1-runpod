@@ -1,0 +1,10 @@
+{
+  "input": {
+    "prompt": "a ceramic teapot on a wooden table, soft daylight",
+    "width": 1024,
+    "height": 1024,
+    "steps": 25,
+    "cfg_scale": 6,
+    "seed": 1
+  }
+}

@@ -140,8 +140,11 @@ def start_engine() -> None:
         "--listen-ip", "127.0.0.1",
         "--listen-port", str(SD_PORT),
     ]
-    if os.environ.get("SD_OFFLOAD", "1") != "0":
+    if os.environ.get("SD_OFFLOAD", "0") in ("1", "true", "True"):
         command.append("--offload-to-cpu")
+        log("offload-to-cpu enabled")
+    else:
+        log("running fully on GPU (offload-to-cpu disabled)")
 
     log("starting " + " ".join(command))
     env = os.environ.copy()
@@ -164,6 +167,9 @@ def start_engine() -> None:
     )
     wait_for_server(_server)
     log(f"sd-server ready at {SD_URL}")
+    startup_log = server_log_tail(50)
+    if startup_log:
+        log("--- sd-server startup & device log ---\n" + startup_log + "\n-------------------------------------")
 
 
 def initialize() -> None:

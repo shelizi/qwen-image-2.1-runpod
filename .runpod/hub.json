@@ -13,7 +13,7 @@
       {
         "name": "1024 balanced",
         "defaults": {
-          "SD_OFFLOAD": "1",
+          "SD_OFFLOAD": "0",
           "SD_STEPS": 25,
           "SD_CFG": 6,
           "SD_WIDTH": 1024,
@@ -23,7 +23,7 @@
       {
         "name": "512 preview",
         "defaults": {
-          "SD_OFFLOAD": "1",
+          "SD_OFFLOAD": "0",
           "SD_STEPS": 8,
           "SD_CFG": 6,
           "SD_WIDTH": 512,
@@ -58,7 +58,7 @@
           "type": "boolean",
           "name": "Offload weights to RAM",
           "description": "Keep the text encoder in system RAM and move weights to the GPU only while they are used.",
-          "default": true,
+          "default": false,
           "trueValue": "1",
           "falseValue": "0"
         }

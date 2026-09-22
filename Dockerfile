@@ -25,7 +25,7 @@ ENV PATH="/opt/venv/bin:${PATH}" \
     SD_CFG=6 \
     SD_WIDTH=1024 \
     SD_HEIGHT=1024 \
-    SD_OFFLOAD=1
+    SD_OFFLOAD=0
 
 COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir -r /requirements.txt

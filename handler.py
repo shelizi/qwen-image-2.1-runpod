@@ -1,5 +1,6 @@
 """RunPod Serverless worker for Qwen-Image 2.1 Q4_K_M."""
 
+import concurrent.futures
 import json
 import os
 import subprocess
@@ -48,11 +49,9 @@ def model_store() -> Path:
     return path
 
 
-def cached_snapshot() -> Path | None:
-    root = Path(
-        "/runpod-volume/huggingface-cache/hub/"
-        "models--KasugaiSakura--Qwen-Image-2.1-Uncensored-Abenzerps-GGUF"
-    )
+def cached_snapshot(repo: str) -> Path | None:
+    repo_slug = repo.replace("/", "--")
+    root = Path(f"/runpod-volume/huggingface-cache/hub/models--{repo_slug}")
     ref = root / "refs" / "main"
     if ref.is_file():
         snapshot = root / "snapshots" / ref.read_text(encoding="utf-8").strip()
@@ -67,13 +66,12 @@ def cached_snapshot() -> Path | None:
 
 
 def resolve_file(repo: str, filename: str) -> str:
-    if repo == REPO:
-        snapshot = cached_snapshot()
-        if snapshot is not None:
-            candidate = snapshot / filename
-            if candidate.is_file() and candidate.stat().st_size > 0:
-                log(f"using cached {candidate}")
-                return str(candidate)
+    snapshot = cached_snapshot(repo)
+    if snapshot is not None:
+        candidate = snapshot / filename
+        if candidate.is_file() and candidate.stat().st_size > 0:
+            log(f"using cached {candidate}")
+            return str(candidate)
     destination = model_store()
     log(f"downloading {repo}/{filename}")
     return hf_hub_download(
@@ -112,9 +110,16 @@ def wait_for_server(process, timeout_s: int = 900) -> None:
 
 def start_engine() -> None:
     global _server
-    diffusion = resolve_file(REPO, DIFFUSION_FILE)
-    llm = resolve_file(LLM_REPO, LLM_FILE)
-    vae = resolve_file(REPO, VAE_FILE)
+    log("downloading model weights in parallel...")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+        f_diff = executor.submit(resolve_file, REPO, DIFFUSION_FILE)
+        f_llm = executor.submit(resolve_file, LLM_REPO, LLM_FILE)
+        f_vae = executor.submit(resolve_file, REPO, VAE_FILE)
+        diffusion = f_diff.result()
+        llm = f_llm.result()
+        vae = f_vae.result()
+    log("all model weights downloaded and ready")
+
     binary = os.environ.get("SD_SERVER_BIN", "/sd-server")
     if not Path(binary).is_file():
         raise FileNotFoundError(f"sd-server not found at {binary}")
@@ -172,9 +177,22 @@ def initialize() -> None:
         _ready.set()
 
 
-def require_ready() -> None:
-    if not _ready.wait(timeout=3600):
-        raise TimeoutError("model initialization timed out")
+def require_ready(job: dict | None = None) -> None:
+    start_time = time.time()
+    while not _ready.is_set():
+        if job is not None:
+            elapsed = int(time.time() - start_time)
+            try:
+                runpod.serverless.progress_update(
+                    job,
+                    f"Initializing models and server ({elapsed}s elapsed)...",
+                )
+            except Exception:
+                pass
+        if _ready.wait(timeout=10):
+            break
+        if time.time() - start_time > 3600:
+            raise TimeoutError("model initialization timed out")
     if _init_error is not None:
         raise RuntimeError(f"worker failed to start: {_init_error}")
 
@@ -192,7 +210,7 @@ def strip_data_url(value: str) -> str:
     return value
 
 
-def generate(job_input: dict) -> dict:
+def generate(job_input: dict, job: dict | None = None) -> dict:
     prompt = str(job_input.get("prompt", "")).strip()
     if not prompt:
         raise ValueError("prompt is required")
@@ -204,6 +222,12 @@ def generate(job_input: dict) -> dict:
         raise ValueError("steps must be between 1 and 60")
     cfg_scale = float(job_input.get("cfg_scale", os.environ.get("SD_CFG", "6")))
     seed = int(job_input.get("seed", -1))
+
+    if job is not None:
+        try:
+            runpod.serverless.progress_update(job, "Running image generation...")
+        except Exception:
+            pass
 
     body = {
         "prompt": prompt,
@@ -251,20 +275,11 @@ def generate(job_input: dict) -> dict:
 
 
 def handler(job):
-    require_ready()
+    require_ready(job)
     job_input = job.get("input") or {}
     with _generate_lock:
-        return generate(job_input)
-
-
-def concurrency_modifier(_current):
-    return 1
+        return generate(job_input, job)
 
 
 threading.Thread(target=initialize, daemon=True).start()
-runpod.serverless.start(
-    {
-        "handler": handler,
-        "concurrency_modifier": concurrency_modifier,
-    }
-)
+runpod.serverless.start({"handler": handler})

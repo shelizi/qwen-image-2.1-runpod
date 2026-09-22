@@ -79,6 +79,7 @@ def resolve_file(filename: str) -> str:
         repo_id=REPO,
         filename=filename,
         local_dir=str(destination),
+        cache_dir=str(destination / ".cache"),
     )
 
 

@@ -24,7 +24,7 @@ The Hugging Face repo also contains the other quants and a 16 GiB BF16 text enco
 6. Set the execution timeout to at least 1800 seconds. The first job waits while the files download.
 7. Deploy. RunPod builds the image from GitHub. A new GitHub release updates an existing endpoint.
 
-`SD_OFFLOAD=1` is the default, so the text encoder stays in RAM and the GPU is used for sampling. Set `SD_OFFLOAD=0` only on a card with enough VRAM to hold all three weights plus activations.
+`SD_OFFLOAD=0` is the default, so all models load directly into GPU VRAM for maximum speed. Set `SD_OFFLOAD=1` if running on smaller GPUs (< 16 GB VRAM) where the text encoder needs to stay in system RAM.
 
 ## Request
 

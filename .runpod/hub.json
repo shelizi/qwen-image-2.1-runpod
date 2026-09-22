@@ -21,6 +21,16 @@
         }
       },
       {
+        "name": "2048 ultra",
+        "defaults": {
+          "SD_OFFLOAD": "0",
+          "SD_STEPS": 30,
+          "SD_CFG": 6,
+          "SD_WIDTH": 2048,
+          "SD_HEIGHT": 2048
+        }
+      },
+      {
         "name": "512 preview",
         "defaults": {
           "SD_OFFLOAD": "0",

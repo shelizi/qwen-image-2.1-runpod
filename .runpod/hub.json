@@ -1,0 +1,108 @@
+{
+  "title": "Qwen Image 2.1",
+  "description": "Text-to-image and reference edit with Qwen-Image 2.1 Q4_K_M GGUF on stable-diffusion.cpp.",
+  "type": "serverless",
+  "category": "image",
+  "config": {
+    "runsOn": "GPU",
+    "containerDiskInGb": 50,
+    "gpuCount": 1,
+    "gpuIds": "AMPERE_24,ADA_24,AMPERE_48,ADA_48_PRO",
+    "allowedCudaVersions": ["12.8", "12.7", "12.6"],
+    "presets": [
+      {
+        "name": "1024 balanced",
+        "defaults": {
+          "SD_OFFLOAD": "1",
+          "SD_STEPS": 25,
+          "SD_CFG": 6,
+          "SD_WIDTH": 1024,
+          "SD_HEIGHT": 1024
+        }
+      },
+      {
+        "name": "512 preview",
+        "defaults": {
+          "SD_OFFLOAD": "1",
+          "SD_STEPS": 8,
+          "SD_CFG": 6,
+          "SD_WIDTH": 512,
+          "SD_HEIGHT": 512
+        }
+      }
+    ],
+    "env": [
+      {
+        "key": "MODEL_REPO",
+        "value": "KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF"
+      },
+      {
+        "key": "DIFFUSION_FILE",
+        "value": "qwen-image-2.1-Q4_K_M.gguf"
+      },
+      {
+        "key": "LLM_FILE",
+        "value": "text_encoders/qwen3vl_8b_int8_convrot.safetensors"
+      },
+      {
+        "key": "VAE_FILE",
+        "value": "vae/qwen_image_2.1_vae_bf16.safetensors"
+      },
+      {
+        "key": "SD_OFFLOAD",
+        "input": {
+          "type": "boolean",
+          "name": "Offload weights to RAM",
+          "description": "Keep the text encoder in system RAM and move weights to the GPU only while they are used.",
+          "default": true,
+          "trueValue": "1",
+          "falseValue": "0"
+        }
+      },
+      {
+        "key": "SD_STEPS",
+        "input": {
+          "name": "Default steps",
+          "type": "number",
+          "description": "Sampling steps used when a request does not set steps.",
+          "min": 1,
+          "max": 60,
+          "default": 25
+        }
+      },
+      {
+        "key": "SD_CFG",
+        "input": {
+          "name": "Default CFG scale",
+          "type": "number",
+          "description": "Classifier-free guidance used when a request does not set cfg_scale.",
+          "min": 1,
+          "max": 12,
+          "default": 6
+        }
+      },
+      {
+        "key": "SD_WIDTH",
+        "input": {
+          "name": "Default width",
+          "type": "number",
+          "description": "Image width in pixels. Must be a multiple of 32.",
+          "min": 256,
+          "max": 2048,
+          "default": 1024
+        }
+      },
+      {
+        "key": "SD_HEIGHT",
+        "input": {
+          "name": "Default height",
+          "type": "number",
+          "description": "Image height in pixels. Must be a multiple of 32.",
+          "min": 256,
+          "max": 2048,
+          "default": 1024
+        }
+      }
+    ]
+  }
+}

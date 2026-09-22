@@ -1,0 +1,27 @@
+{
+  "tests": [
+    {
+      "name": "text_to_image",
+      "input": {
+        "prompt": "a ceramic teapot on a wooden table, soft daylight",
+        "width": 512,
+        "height": 512,
+        "steps": 4,
+        "cfg_scale": 6,
+        "seed": 1
+      },
+      "timeout": 1800000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuCount": 1,
+    "env": [
+      {
+        "key": "SD_OFFLOAD",
+        "value": "1"
+      }
+    ],
+    "allowedCudaVersions": ["12.8", "12.7", "12.6"]
+  }
+}

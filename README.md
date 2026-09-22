@@ -1,5 +1,7 @@
 # Qwen-Image 2.1 RunPod Serverless
 
+[![Runpod](https://api.runpod.io/badge/shelizi/qwen-image-2.1-runpod)](https://console.runpod.io/hub/listing/shelizi/qwen-image-2.1-runpod)
+
 RunPod Serverless worker for [KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF](https://huggingface.co/KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF), using the **Q4_K_M** diffusion file.
 
 The container runs `stable-diffusion.cpp` on CUDA. It does not bake the weights into the image. On startup it loads only these three files:

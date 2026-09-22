@@ -1,5 +1,7 @@
 """RunPod Serverless worker for Qwen-Image 2.1 Q4_K_M."""
 
+WORKER_VERSION = "v0.1.9"
+
 import base64
 import concurrent.futures
 import json
@@ -332,7 +334,7 @@ def generate(job_input: dict, job: dict | None = None) -> dict:
         raise ValueError("steps must be between 1 and 60")
     cfg_scale = float(job_input.get("cfg_scale", os.environ.get("SD_CFG", "6")))
     seed = int(job_input.get("seed", -1))
-    if seed <= 0:
+    if seed <= 0 or seed > 2147483647:
         seed = random.randint(1, 2147483647)
 
     if job is not None:
@@ -369,7 +371,7 @@ def generate(job_input: dict, job: dict | None = None) -> dict:
         detail = exc.read().decode("utf-8", "replace")
         server_tail = server_log_tail(40)
         raise RuntimeError(
-            f"sd-server returned {exc.code}: {detail}\n"
+            f"sd-server returned {exc.code}: {detail} [worker build {WORKER_VERSION}]\n"
             f"--- sd-server log tail ---\n{server_tail}\n--------------------------"
         ) from exc
 
@@ -387,6 +389,7 @@ def generate(job_input: dict, job: dict | None = None) -> dict:
         "steps": info.get("steps", steps),
         "cfg_scale": info.get("cfg_scale", cfg_scale),
         "elapsed_seconds": round(time.time() - started, 2),
+        "worker_version": WORKER_VERSION,
     }
 
 
@@ -414,5 +417,6 @@ def handler(job):
         return generate(job_input, job)
 
 
+log(f"qwen-image-2.1 worker build {WORKER_VERSION} starting")
 threading.Thread(target=initialize, daemon=True).start()
 runpod.serverless.start({"handler": handler})

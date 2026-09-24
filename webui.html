@@ -638,7 +638,7 @@
         <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
           <input type="file" id="fileInput" accept="image/*" style="display: none;">
           <div id="dropzonePrompt">
-            <span>📷 點擊上傳或將圖片拖曳至此</span>
+            <span>📷 點擊、拖曳或 Ctrl+V 貼上圖片</span>
             <div style="font-size: 11px; color: var(--text-dim); margin-top: 4px;">支援 PNG, JPG, WebP 作為修圖參考</div>
           </div>
           <div id="dropzoneContent" style="display: none; position: relative;">
@@ -881,6 +881,28 @@
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
           handleFile(e.dataTransfer.files[0]);
         }
+      });
+
+      document.addEventListener('paste', (e) => {
+        const data = e.clipboardData;
+        if (!data) return;
+        const files = [];
+        if (data.items) {
+          for (const item of data.items) {
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+              const file = item.getAsFile();
+              if (file) files.push(file);
+            }
+          }
+        }
+        if (!files.length && data.files) {
+          for (const file of data.files) {
+            if (file.type.startsWith('image/')) files.push(file);
+          }
+        }
+        if (!files.length) return;
+        e.preventDefault();
+        handleFile(files[0]);
       });
     }
 

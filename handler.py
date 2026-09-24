@@ -1,6 +1,6 @@
 """RunPod Serverless worker for Qwen-Image 2.1 Q4_K_M."""
 
-WORKER_VERSION = "v0.1.10"
+WORKER_VERSION = "v0.1.12"
 
 import base64
 import concurrent.futures
@@ -259,22 +259,11 @@ def start_engine() -> None:
         log("running fully on GPU (offload-to-cpu disabled)")
 
     log("starting " + " ".join(command))
-    env = os.environ.copy()
-    library_paths = [
-        "/usr/local/nvidia/lib64",
-        "/usr/local/nvidia/lib",
-        "/usr/local/cuda/lib64",
-        "/usr/local/cuda/compat",
-        "/sd.cpp/bin",
-    ]
-    current = env.get("LD_LIBRARY_PATH", "")
-    env["LD_LIBRARY_PATH"] = ":".join(path for path in library_paths + [current] if path)
     log_handle = SERVER_LOG.open("w", encoding="utf-8")
     _server = subprocess.Popen(
         command,
         stdout=log_handle,
         stderr=subprocess.STDOUT,
-        env=env,
         cwd="/sd.cpp/bin",
     )
     wait_for_server(_server)
@@ -285,7 +274,8 @@ def start_engine() -> None:
     if "ggml_cuda_init: failed" in startup_log or "no GPU devices" in startup_log:
         raise RuntimeError(
             "sd-server started without a working GPU (host driver/CUDA mismatch); "
-            "failing fast instead of burning CPU inference"
+            "failing fast instead of burning CPU inference\n"
+            + startup_log
         )
 
 

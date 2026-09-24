@@ -8,7 +8,7 @@ The container runs `stable-diffusion.cpp` on CUDA. It does not bake the weights 
 
 | Role | File | Size |
 | --- | --- | --- |
-| Diffusion | `qwen-image-2.1-Q4_K_M.gguf` | 4.6 GiB |
+| Diffusion | `qwen-image-2.1-UC-Q4_K_M.gguf` | 4.6 GiB |
 | Text encoder | `Qwen/Qwen3-VL-8B-Instruct-GGUF` `Qwen3VL-8B-Instruct-Q4_K_M.gguf` | 5.0 GB |
 | VAE | `vae/qwen_image_2.1_vae_bf16.safetensors` | 644 MiB |
 

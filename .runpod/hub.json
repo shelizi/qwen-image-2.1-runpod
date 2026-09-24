@@ -48,7 +48,7 @@
       },
       {
         "key": "DIFFUSION_FILE",
-        "value": "qwen-image-2.1-Q4_K_M.gguf"
+        "value": "qwen-image-2.1-UC-Q4_K_M.gguf"
       },
       {
         "key": "LLM_REPO",

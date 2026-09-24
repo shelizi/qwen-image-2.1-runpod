@@ -23,7 +23,7 @@ REPO = os.environ.get(
     "MODEL_REPO",
     "KasugaiSakura/Qwen-Image-2.1-Uncensored-Abenzerps-GGUF",
 )
-DIFFUSION_FILE = os.environ.get("DIFFUSION_FILE", "qwen-image-2.1-Q4_K_M.gguf")
+DIFFUSION_FILE = os.environ.get("DIFFUSION_FILE", "qwen-image-2.1-UC-Q4_K_M.gguf")
 LLM_REPO = os.environ.get("LLM_REPO", "Qwen/Qwen3-VL-8B-Instruct-GGUF")
 LLM_FILE = os.environ.get("LLM_FILE", "Qwen3VL-8B-Instruct-Q4_K_M.gguf")
 LLM_VISION_FILE = os.environ.get(

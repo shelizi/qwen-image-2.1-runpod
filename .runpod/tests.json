@@ -14,7 +14,7 @@
     }
   ],
   "config": {
-    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuTypeId": "NVIDIA L4",
     "gpuCount": 1,
     "env": [
       {
